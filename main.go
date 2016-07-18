@@ -15,7 +15,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"version"
+
+	"github.com/cyverse-de/version"
 
 	"github.com/cyverse-de/configurate"
 	"github.com/cyverse-de/logcabin"
