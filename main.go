@@ -9,16 +9,17 @@
 package main
 
 import (
-	"configurate"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"logcabin"
-	"messaging"
-	"model"
 	"net/http"
 	"os"
+
+	"github.com/cyverse-de/configurate"
+	"github.com/cyverse-de/logcabin"
+	"github.com/cyverse-de/messaging"
+	"github.com/cyverse-de/model"
 
 	"github.com/gorilla/mux"
 	"github.com/olebedev/config"

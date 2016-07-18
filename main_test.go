@@ -2,17 +2,18 @@ package main
 
 import (
 	"bytes"
-	"configurate"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"messaging"
-	"model"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/cyverse-de/configurate"
+	"github.com/cyverse-de/messaging"
+	"github.com/cyverse-de/model"
 
 	"github.com/olebedev/config"
 	"github.com/streadway/amqp"
