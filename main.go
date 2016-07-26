@@ -42,7 +42,8 @@ func New(cfg *config.Config) *JEXAdapter {
 }
 
 func amqpError(err error) {
-	if err.(*amqp.Error).Code != 0 {
+	amqpErr, ok := err.(*amqp.Error)
+	if !ok || amqpErr.Code != 0 {
 		logcabin.Error.Fatal(err)
 	}
 }
