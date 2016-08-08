@@ -10,6 +10,7 @@ package main
 
 import (
 	"encoding/json"
+	_ "expvar"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -283,6 +284,7 @@ func (j *JEXAdapter) NewRouter() *mux.Router {
 	router.HandleFunc("/", j.launch).Methods("POST")
 	router.HandleFunc("/stop/{invocation_id}", j.stop).Methods("DELETE")
 	router.HandleFunc("/arg-preview", j.preview).Methods("POST")
+	router.Handle("/debug/vars", http.DefaultServeMux)
 	return router
 }
 
