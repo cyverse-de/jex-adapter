@@ -104,62 +104,65 @@ func (j *JEXAdapter) launch(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	// NOTE: the below is commented out because road-runner does not use
+	// these queues, so they're just wasted space
+
 	// Create the time limit delta channel
-	timeLimitDeltaChannel, err := j.client.CreateQueue(
-		messaging.TimeLimitDeltaQueueName(job.InvocationID),
-		messaging.JobsExchange,
-		messaging.TimeLimitDeltaRequestKey(job.InvocationID),
-		false,
-		true,
-	)
-	if err != nil {
-		logcabin.Error.Print(err)
-		http.Error(
-			writer,
-			fmt.Sprintf("Error creating time limit delta request queue: %s", err.Error()),
-			http.StatusInternalServerError,
-		)
-		amqpError(err)
-	}
-	defer timeLimitDeltaChannel.Close()
+	//timeLimitDeltaChannel, err := j.client.CreateQueue(
+	//	messaging.TimeLimitDeltaQueueName(job.InvocationID),
+	//	messaging.JobsExchange,
+	//	messaging.TimeLimitDeltaRequestKey(job.InvocationID),
+	//	false,
+	//	true,
+	//)
+	//if err != nil {
+	//	logcabin.Error.Print(err)
+	//	http.Error(
+	//		writer,
+	//		fmt.Sprintf("Error creating time limit delta request queue: %s", err.Error()),
+	//		http.StatusInternalServerError,
+	//	)
+	//	amqpError(err)
+	//}
+	//defer timeLimitDeltaChannel.Close()
 
-	// Create the time limit request channel
-	timeLimitRequestChannel, err := j.client.CreateQueue(
-		messaging.TimeLimitRequestQueueName(job.InvocationID),
-		messaging.JobsExchange,
-		messaging.TimeLimitRequestKey(job.InvocationID),
-		false,
-		true,
-	)
-	if err != nil {
-		logcabin.Error.Print(err)
-		http.Error(
-			writer,
-			fmt.Sprintf("Error creating time limit request queue: %s", err.Error()),
-			http.StatusInternalServerError,
-		)
-		amqpError(err)
-	}
-	defer timeLimitRequestChannel.Close()
+	//// Create the time limit request channel
+	//timeLimitRequestChannel, err := j.client.CreateQueue(
+	//	messaging.TimeLimitRequestQueueName(job.InvocationID),
+	//	messaging.JobsExchange,
+	//	messaging.TimeLimitRequestKey(job.InvocationID),
+	//	false,
+	//	true,
+	//)
+	//if err != nil {
+	//	logcabin.Error.Print(err)
+	//	http.Error(
+	//		writer,
+	//		fmt.Sprintf("Error creating time limit request queue: %s", err.Error()),
+	//		http.StatusInternalServerError,
+	//	)
+	//	amqpError(err)
+	//}
+	//defer timeLimitRequestChannel.Close()
 
-	// Create the time limit response channel
-	timeLimitResponseChannel, err := j.client.CreateQueue(
-		messaging.TimeLimitResponsesQueueName(job.InvocationID),
-		messaging.JobsExchange,
-		messaging.TimeLimitResponsesKey(job.InvocationID),
-		false,
-		true,
-	)
-	if err != nil {
-		logcabin.Error.Print(err)
-		http.Error(
-			writer,
-			fmt.Sprintf("Error creating time limit response queue: %s", err.Error()),
-			http.StatusInternalServerError,
-		)
-		amqpError(err)
-	}
-	defer timeLimitResponseChannel.Close()
+	//// Create the time limit response channel
+	//timeLimitResponseChannel, err := j.client.CreateQueue(
+	//	messaging.TimeLimitResponsesQueueName(job.InvocationID),
+	//	messaging.JobsExchange,
+	//	messaging.TimeLimitResponsesKey(job.InvocationID),
+	//	false,
+	//	true,
+	//)
+	//if err != nil {
+	//	logcabin.Error.Print(err)
+	//	http.Error(
+	//		writer,
+	//		fmt.Sprintf("Error creating time limit response queue: %s", err.Error()),
+	//		http.StatusInternalServerError,
+	//	)
+	//	amqpError(err)
+	//}
+	//defer timeLimitResponseChannel.Close()
 
 	// Create the stop request channel
 	stopRequestChannel, err := j.client.CreateQueue(
