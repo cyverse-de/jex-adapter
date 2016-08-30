@@ -15,13 +15,13 @@ import (
 	"github.com/cyverse-de/messaging"
 	"github.com/cyverse-de/model"
 
-	"github.com/olebedev/config"
+	"github.com/spf13/viper"
 	"github.com/streadway/amqp"
 )
 
 var (
 	s   *model.Job
-	cfg *config.Config
+	cfg *viper.Viper
 )
 
 func shouldrun() bool {

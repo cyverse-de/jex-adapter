@@ -25,18 +25,18 @@ import (
 	"github.com/cyverse-de/model"
 
 	"github.com/gorilla/mux"
-	"github.com/olebedev/config"
+	"github.com/spf13/viper"
 	"github.com/streadway/amqp"
 )
 
 // JEXAdapter contains the application state for jex-adapter.
 type JEXAdapter struct {
-	cfg    *config.Config
+	cfg    *viper.Viper
 	client *messaging.Client
 }
 
 // New returns a *JEXAdapter
-func New(cfg *config.Config) *JEXAdapter {
+func New(cfg *viper.Viper) *JEXAdapter {
 	return &JEXAdapter{
 		cfg: cfg,
 	}
@@ -311,15 +311,12 @@ func main() {
 		os.Exit(-1)
 	}
 
-	cfg, err := configurate.Init(*cfgPath)
+	cfg, err := configurate.InitDefaults(*cfgPath, configurate.JobServicesDefaults)
 	if err != nil {
 		logcabin.Error.Fatal(err)
 	}
 
-	amqpURI, err = cfg.String("amqp.uri")
-	if err != nil {
-		logcabin.Error.Fatal(err)
-	}
+	amqpURI = cfg.GetString("amqp.uri")
 
 	app := New(cfg)
 
