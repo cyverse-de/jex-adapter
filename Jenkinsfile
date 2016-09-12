@@ -1,3 +1,4 @@
+#!groovy
 def repo = "jex-adapter"
 def dockerUser = "discoenv"
 
