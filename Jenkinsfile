@@ -5,7 +5,7 @@ node('docker') {
         stage "Build"
         checkout scm
 
-        service = load 'service.groovy'
+        load 'service.groovy'
 
         git_commit = sh(returnStdout: true, script: "git rev-parse HEAD").trim()
         echo git_commit
@@ -18,10 +18,10 @@ node('docker') {
         try {
             stage "Test"
             dockerTestRunner = "test-${env.BUILD_TAG}"
-            sh "docker run --rm --name ${dockerTestRunner} --entrypoint 'go' ${dockerRepo} test github.com/cyverse-de/${service.repo}"
+            sh "docker run --rm --name ${dockerTestRunner} --entrypoint 'go' ${dockerRepo} test github.com/cyverse-de/${repo}"
 
             stage "Docker Push"
-            dockerPushRepo = "${service.dockerUser}/${service.repo}:${env.BRANCH_NAME}"
+            dockerPushRepo = "${dockerUser}/${repo}:${env.BRANCH_NAME}"
             sh "docker tag ${dockerRepo} ${dockerPushRepo}"
             sh "docker push ${dockerPushRepo}"
         } finally {
