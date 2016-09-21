@@ -1,10 +1,11 @@
 #!groovy
 node('docker') {
     slackJobDescription = "job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})"
-    service = load 'service.groovy'
     try {
         stage "Build"
         checkout scm
+
+        service = load 'service.groovy'
 
         git_commit = sh(returnStdout: true, script: "git rev-parse HEAD").trim()
         echo git_commit
