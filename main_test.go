@@ -135,7 +135,9 @@ func TestStop(t *testing.T) {
 		}
 		exitChan <- 1
 	})
-	client.SetupPublishing(messaging.JobsExchange)
+	exchangeName := app.cfg.GetString("amqp.exchange.name")
+
+	client.SetupPublishing(exchangeName)
 	go client.Listen()
 	time.Sleep(100 * time.Millisecond)
 	requestURL := fmt.Sprintf("http://for-a-test.org/stop/%s", invID)
@@ -182,7 +184,8 @@ func TestLaunch(t *testing.T) {
 		}
 		exitChan <- 1
 	})
-	client.SetupPublishing(messaging.JobsExchange)
+	exchangeName := app.cfg.GetString("amqp.exchange.name")
+	client.SetupPublishing(exchangeName)
 	go client.Listen()
 	time.Sleep(100 * time.Millisecond)
 	marshalledJob, err := json.Marshal(job)
