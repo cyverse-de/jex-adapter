@@ -107,11 +107,12 @@ func TestStop(t *testing.T) {
 	stopKey := fmt.Sprintf("%s.%s", messaging.StopsKey, invID)
 	exitChan := make(chan int)
 	client, err := messaging.NewClient(uri(), false)
+	exchangeName := app.cfg.GetString("amqp.exchange.name")
 	if err != nil {
 		t.Error(err)
 	}
 	defer client.Close()
-	client.AddConsumer(messaging.JobsExchange, "topic", "test_stop", stopKey, func(d amqp.Delivery) {
+	client.AddConsumer(exchangeName, "topic", "test_stop", stopKey, func(d amqp.Delivery) {
 		d.Ack(false)
 		stopMsg := &messaging.StopRequest{}
 		err = json.Unmarshal(d.Body, stopMsg)
@@ -135,7 +136,6 @@ func TestStop(t *testing.T) {
 		}
 		exitChan <- 1
 	})
-	exchangeName := app.cfg.GetString("amqp.exchange.name")
 
 	client.SetupPublishing(exchangeName)
 	go client.Listen()
@@ -161,11 +161,12 @@ func TestLaunch(t *testing.T) {
 	job := inittests(t)
 	exitChan := make(chan int)
 	client, err := messaging.NewClient(uri(), false)
+	exchangeName := app.cfg.GetString("amqp.exchange.name")
 	if err != nil {
 		t.Error(err)
 	}
 	defer client.Close()
-	client.AddConsumer(messaging.JobsExchange, "topic", "test_launch", messaging.LaunchesKey, func(d amqp.Delivery) {
+	client.AddConsumer(exchangeName, "topic", "test_launch", messaging.LaunchesKey, func(d amqp.Delivery) {
 		d.Ack(false)
 		launch := &messaging.JobRequest{}
 		err = json.Unmarshal(d.Body, launch)
@@ -184,7 +185,6 @@ func TestLaunch(t *testing.T) {
 		}
 		exitChan <- 1
 	})
-	exchangeName := app.cfg.GetString("amqp.exchange.name")
 	client.SetupPublishing(exchangeName)
 	go client.Listen()
 	time.Sleep(100 * time.Millisecond)

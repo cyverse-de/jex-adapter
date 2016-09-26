@@ -29,6 +29,10 @@ import (
 	"github.com/streadway/amqp"
 )
 
+var (
+	exchangeName string
+)
+
 // JEXAdapter contains the application state for jex-adapter.
 type JEXAdapter struct {
 	cfg    *viper.Viper
@@ -167,7 +171,7 @@ func (j *JEXAdapter) launch(writer http.ResponseWriter, request *http.Request) {
 	// Create the stop request channel
 	stopRequestChannel, err := j.client.CreateQueue(
 		messaging.StopQueueName(job.InvocationID),
-		messaging.JobsExchange,
+		exchangeName,
 		messaging.StopRequestKey(job.InvocationID),
 		false,
 		true,
@@ -320,7 +324,7 @@ func main() {
 	}
 
 	amqpURI = cfg.GetString("amqp.uri")
-	exchangeName := cfg.GetString("amqp.exchange.name")
+	exchangeName = cfg.GetString("amqp.exchange.name")
 
 	app := New(cfg)
 
