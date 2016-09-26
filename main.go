@@ -320,6 +320,7 @@ func main() {
 	}
 
 	amqpURI = cfg.GetString("amqp.uri")
+	exchangeName := cfg.GetString("amqp.exchange.name")
 
 	app := New(cfg)
 
@@ -329,7 +330,7 @@ func main() {
 	}
 	defer app.client.Close()
 
-	app.client.SetupPublishing(messaging.JobsExchange)
+	app.client.SetupPublishing(exchangeName)
 
 	router := app.NewRouter()
 	logcabin.Error.Fatal(http.ListenAndServe(*addr, router))
