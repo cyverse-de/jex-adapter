@@ -18,6 +18,7 @@ import (
 	"os"
 
 	"github.com/cyverse-de/version"
+	"github.com/johnworth/events/ping"
 
 	"github.com/cyverse-de/configurate"
 	"github.com/cyverse-de/logcabin"
@@ -32,6 +33,9 @@ import (
 var (
 	exchangeName string
 )
+
+const pingKey = "events.jex-adapter.ping"
+const pongKey = "events.jex-adapter.pong"
 
 // JEXAdapter contains the application state for jex-adapter.
 type JEXAdapter struct {
@@ -295,12 +299,42 @@ func (j *JEXAdapter) NewRouter() *mux.Router {
 	return router
 }
 
+// eventsHandler will delegate event messages to event functions based on the
+// specific routing key used to send the message.
+func (j *JEXAdapter) eventsHandler(delivery amqp.Delivery) {
+	if err := delivery.Ack(false); err != nil {
+		logcabin.Error.Print(err)
+	}
+
+	if delivery.RoutingKey == pingKey {
+		j.pingHandler(delivery)
+		return
+	}
+}
+
+func (j *JEXAdapter) pingHandler(delivery amqp.Delivery) {
+	logcabin.Info.Println("Received ping")
+
+	out, err := json.Marshal(&ping.Pong{})
+	if err != nil {
+		logcabin.Error.Print(err)
+	}
+
+	logcabin.Info.Println("Sent pong")
+
+	if err = j.client.Publish(pongKey, out); err != nil {
+		logcabin.Error.Print(err)
+	}
+}
+
 func main() {
 	var (
-		showVersion = flag.Bool("version", false, "Print version information")
-		cfgPath     = flag.String("config", "", "Path to the configuration file")
-		addr        = flag.String("addr", ":60000", "The port to listen on for HTTP requests")
-		amqpURI     string
+		showVersion      = flag.Bool("version", false, "Print version information")
+		cfgPath          = flag.String("config", "", "Path to the configuration file")
+		addr             = flag.String("addr", ":60000", "The port to listen on for HTTP requests")
+		eventsQueue      = flag.String("events-queue", "jex_adapter_events", "The AMQP queue name for jex-adapter events")
+		eventsRoutingKey = flag.String("events-key", "events.jex-adapter.*", "The routing key to use to listen for events")
+		amqpURI          string
 	)
 
 	flag.Parse()
@@ -325,6 +359,7 @@ func main() {
 
 	amqpURI = cfg.GetString("amqp.uri")
 	exchangeName = cfg.GetString("amqp.exchange.name")
+	exchangeType := cfg.GetString("amqp.exchange.type")
 
 	app := New(cfg)
 
@@ -334,7 +369,17 @@ func main() {
 	}
 	defer app.client.Close()
 
+	go app.client.Listen()
+
 	app.client.SetupPublishing(exchangeName)
+
+	app.client.AddConsumer(
+		exchangeName,
+		exchangeType,
+		*eventsQueue,
+		*eventsRoutingKey,
+		app.eventsHandler,
+	)
 
 	router := app.NewRouter()
 	logcabin.Error.Fatal(http.ListenAndServe(*addr, router))
