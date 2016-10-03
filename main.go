@@ -17,8 +17,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/cyverse-de/go-events/ping"
 	"github.com/cyverse-de/version"
-	"github.com/johnworth/events/ping"
 
 	"github.com/cyverse-de/configurate"
 	"github.com/cyverse-de/logcabin"
