@@ -1,0 +1,39 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use File::Path qw( make_path );
+use Getopt::Long qw( :config pass_through );
+use Env qw( CONF_TEMPLATE CONF_FILENAME PROGRAM );
+
+my $config;
+my $exclude_config_arg = 0;
+my $dry_run = 0;
+
+GetOptions('config:s' => \$config,
+	   'exclude-config-arg' => \$exclude_config_arg,
+           'dry-run' => \$dry_run);
+
+my $real_config;
+if (defined $config and $config =~ m{^consul://(.*)$}) {
+	my $dir = '/etc/iplant/de';
+	make_path($dir);
+	die "'$dir/$CONF_FILENAME' already exists, bailing out" if -e "$dir/$CONF_FILENAME";
+	system ("consul-template", "-once", "-consul", $1, "-template", "$CONF_TEMPLATE:$dir/$CONF_FILENAME") == 0
+		or die "invoking consul-template failed: $?";
+	$real_config = "$dir/$CONF_FILENAME";
+} else {
+	$real_config = $config;
+}
+
+unless ($dry_run) {
+	my @exec = @ARGV;
+	unshift(@exec, $PROGRAM);
+	push(@exec, "--config", $real_config) unless $exclude_config_arg;
+	exec @exec;
+}
+
+# Print out the generated config file when --dry-run is passed
+print "# $real_config:\n";
+exec ('cat', $real_config);
