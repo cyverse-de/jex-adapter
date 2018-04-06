@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/cyverse-de/configurate"
-	"gopkg.in/cyverse-de/messaging.v2"
-	"gopkg.in/cyverse-de/model.v1"
+	"gopkg.in/cyverse-de/messaging.v4"
+	"gopkg.in/cyverse-de/model.v2"
 
 	"github.com/spf13/viper"
 	"github.com/streadway/amqp"
@@ -135,7 +135,8 @@ func TestStop(t *testing.T) {
 			t.Errorf("messaging.StopRequest.InvocationID was %s instead of %s", actual, expected)
 		}
 		exitChan <- 1
-	})
+	},
+		0)
 
 	client.SetupPublishing(exchangeName)
 	go client.Listen()
@@ -184,7 +185,8 @@ func TestLaunch(t *testing.T) {
 			t.Errorf("InvocationID was %s instead of %s", actual, expected)
 		}
 		exitChan <- 1
-	})
+	},
+		0)
 	client.SetupPublishing(exchangeName)
 	go client.Listen()
 	time.Sleep(100 * time.Millisecond)
