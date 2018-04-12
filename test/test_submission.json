@@ -19,7 +19,8 @@
                         "id":"fc210a84-f7cd-4067-939c-a68ec3e3bd2b",
                         "url":"https://registry.hub.docker.com/u/discoenv/backwards-compat",
                         "tag":"latest",
-                        "name":"gims.iplantcollaborative.org:5000/backwards-compat"
+                        "name":"gims.iplantcollaborative.org:5000/backwards-compat",
+                        "osg_image_path":"/path/to/image"
                     },
                     "container_volumes_from" : [
                       {
