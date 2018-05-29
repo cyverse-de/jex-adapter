@@ -101,6 +101,8 @@ func (j *JEXAdapter) launch(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	logcabin.Info.Println(bodyBytes)
+
 	job, err := model.NewFromData(j.cfg, bodyBytes)
 	if err != nil {
 		logcabin.Error.Print(err)
