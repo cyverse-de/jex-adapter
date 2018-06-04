@@ -130,9 +130,10 @@
   revision = "16990631d4aa7e38f73dbbbf37fa13e67c648531"
 
 [[projects]]
+  branch = "master"
   name = "github.com/streadway/amqp"
   packages = ["."]
-  revision = "2e25825abdbd7752ff08b270d313b93519a0a232"
+  revision = "e5adc2ada8b8efff032bf61173a233d143e9318e"
 
 [[projects]]
   name = "golang.org/x/crypto"
@@ -168,10 +169,22 @@
   version = "v4"
 
 [[projects]]
+  name = "gopkg.in/cyverse-de/messaging.v5"
+  packages = ["."]
+  revision = "d110087cc52b344bc40a8ae5e2d90a1d4f51ca68"
+  version = "v5"
+
+[[projects]]
   name = "gopkg.in/cyverse-de/model.v2"
   packages = ["."]
   revision = "92391a997e436287d0d3be91b67d9c171d104aeb"
   version = "v2.12"
+
+[[projects]]
+  name = "gopkg.in/cyverse-de/model.v3"
+  packages = ["."]
+  revision = "9435ba8c8862b1ced3af7d1bdb8b07ed6316a2aa"
+  version = "v3.0"
 
 [[projects]]
   branch = "v2"
@@ -182,6 +195,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "69888e76b6eca79b69575add46e59e45ec59e11d736c9d908196adeabda0384c"
+  inputs-digest = "b071f717ab0f4ececc2e5dbacf178db4146673d180751c60bfb6f9f6d140f932"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -22,8 +22,8 @@ import (
 
 	"github.com/cyverse-de/configurate"
 	"github.com/cyverse-de/logcabin"
-	"gopkg.in/cyverse-de/messaging.v4"
-	"gopkg.in/cyverse-de/model.v2"
+	"gopkg.in/cyverse-de/messaging.v5"
+	"gopkg.in/cyverse-de/model.v3"
 
 	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
@@ -193,7 +193,7 @@ func (j *JEXAdapter) launch(writer http.ResponseWriter, request *http.Request) {
 	}
 	defer stopRequestChannel.Close()
 
-	launchRequest := messaging.NewLaunchRequest(job)
+	launchRequest := messaging.NewLaunchRequest(job.InvocationID)
 	if err != nil {
 		logcabin.Error.Print(err)
 		http.Error(
