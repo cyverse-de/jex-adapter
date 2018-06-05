@@ -163,16 +163,16 @@
   revision = "d69c40b4be55797923cec7457fac7a244d91a9b6"
 
 [[projects]]
+  branch = "v4.1"
   name = "gopkg.in/cyverse-de/messaging.v4"
   packages = ["."]
-  revision = "bef7609a2fe6e9418eeb36906929abee2298cf93"
-  version = "v4"
+  revision = "44770d49ac4d5fc4bccb377096d95bfa0ee7de7c"
 
 [[projects]]
-  name = "gopkg.in/cyverse-de/model.v2"
+  name = "gopkg.in/cyverse-de/model.v3"
   packages = ["."]
-  revision = "92391a997e436287d0d3be91b67d9c171d104aeb"
-  version = "v2.12"
+  revision = "9435ba8c8862b1ced3af7d1bdb8b07ed6316a2aa"
+  version = "v3.0"
 
 [[projects]]
   branch = "v2"
@@ -183,6 +183,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1f23cb294e8306f66f976cd45299cf7f007766f7c3041ea17ce66b8cca74c5da"
+  inputs-digest = "68888b836d512921f1b8bfafb19047c180c5a28841dcdad5dd93a7d8583ae0b4"
   solver-name = "gps-cdcl"
   solver-version = 1

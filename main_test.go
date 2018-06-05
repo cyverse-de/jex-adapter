@@ -13,7 +13,7 @@ import (
 
 	"github.com/cyverse-de/configurate"
 	"gopkg.in/cyverse-de/messaging.v4"
-	"gopkg.in/cyverse-de/model.v2"
+	"gopkg.in/cyverse-de/model.v3"
 
 	"github.com/spf13/viper"
 	"github.com/streadway/amqp"

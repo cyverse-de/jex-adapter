@@ -23,7 +23,7 @@ import (
 	"github.com/cyverse-de/configurate"
 	"github.com/cyverse-de/logcabin"
 	"gopkg.in/cyverse-de/messaging.v4"
-	"gopkg.in/cyverse-de/model.v2"
+	"gopkg.in/cyverse-de/model.v3"
 
 	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
