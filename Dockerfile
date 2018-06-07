@@ -1,5 +1,7 @@
 FROM golang:1.10.2
 
+RUN go get -u github.com/jstemmer/go-junit-report
+
 COPY . /go/src/github.com/cyverse-de/jex-adapter
 RUN go install github.com/cyverse-de/jex-adapter
 
