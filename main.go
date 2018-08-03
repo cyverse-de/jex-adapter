@@ -31,7 +31,7 @@ import (
 )
 
 var (
-	exchangeName string
+	exchangeName string // adding a comment to test pull requests.
 )
 
 const pingKey = "events.jex-adapter.ping"
