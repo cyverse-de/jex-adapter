@@ -17,7 +17,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/cyverse-de/go-events/ping"
 	"github.com/cyverse-de/version"
 
 	"github.com/cyverse-de/configurate"
@@ -33,9 +32,6 @@ import (
 var (
 	exchangeName string
 )
-
-const pingKey = "events.jex-adapter.ping"
-const pongKey = "events.jex-adapter.pong"
 
 // JEXAdapter contains the application state for jex-adapter.
 type JEXAdapter struct {
@@ -113,66 +109,6 @@ func (j *JEXAdapter) launch(writer http.ResponseWriter, request *http.Request) {
 		)
 		return
 	}
-
-	// NOTE: the below is commented out because road-runner does not use
-	// these queues, so they're just wasted space
-
-	// Create the time limit delta channel
-	//timeLimitDeltaChannel, err := j.client.CreateQueue(
-	//	messaging.TimeLimitDeltaQueueName(job.InvocationID),
-	//	messaging.JobsExchange,
-	//	messaging.TimeLimitDeltaRequestKey(job.InvocationID),
-	//	false,
-	//	true,
-	//)
-	//if err != nil {
-	//	logcabin.Error.Print(err)
-	//	http.Error(
-	//		writer,
-	//		fmt.Sprintf("Error creating time limit delta request queue: %s", err.Error()),
-	//		http.StatusInternalServerError,
-	//	)
-	//	amqpError(err)
-	//}
-	//defer timeLimitDeltaChannel.Close()
-
-	//// Create the time limit request channel
-	//timeLimitRequestChannel, err := j.client.CreateQueue(
-	//	messaging.TimeLimitRequestQueueName(job.InvocationID),
-	//	messaging.JobsExchange,
-	//	messaging.TimeLimitRequestKey(job.InvocationID),
-	//	false,
-	//	true,
-	//)
-	//if err != nil {
-	//	logcabin.Error.Print(err)
-	//	http.Error(
-	//		writer,
-	//		fmt.Sprintf("Error creating time limit request queue: %s", err.Error()),
-	//		http.StatusInternalServerError,
-	//	)
-	//	amqpError(err)
-	//}
-	//defer timeLimitRequestChannel.Close()
-
-	//// Create the time limit response channel
-	//timeLimitResponseChannel, err := j.client.CreateQueue(
-	//	messaging.TimeLimitResponsesQueueName(job.InvocationID),
-	//	messaging.JobsExchange,
-	//	messaging.TimeLimitResponsesKey(job.InvocationID),
-	//	false,
-	//	true,
-	//)
-	//if err != nil {
-	//	logcabin.Error.Print(err)
-	//	http.Error(
-	//		writer,
-	//		fmt.Sprintf("Error creating time limit response queue: %s", err.Error()),
-	//		http.StatusInternalServerError,
-	//	)
-	//	amqpError(err)
-	//}
-	//defer timeLimitResponseChannel.Close()
 
 	// Create the stop request channel
 	stopRequestChannel, err := j.client.CreateQueue(
@@ -301,42 +237,12 @@ func (j *JEXAdapter) NewRouter() *mux.Router {
 	return router
 }
 
-// eventsHandler will delegate event messages to event functions based on the
-// specific routing key used to send the message.
-func (j *JEXAdapter) eventsHandler(delivery amqp.Delivery) {
-	if err := delivery.Ack(false); err != nil {
-		logcabin.Error.Print(err)
-	}
-
-	if delivery.RoutingKey == pingKey {
-		j.pingHandler(delivery)
-		return
-	}
-}
-
-func (j *JEXAdapter) pingHandler(delivery amqp.Delivery) {
-	logcabin.Info.Println("Received ping")
-
-	out, err := json.Marshal(&ping.Pong{})
-	if err != nil {
-		logcabin.Error.Print(err)
-	}
-
-	logcabin.Info.Println("Sent pong")
-
-	if err = j.client.Publish(pongKey, out); err != nil {
-		logcabin.Error.Print(err)
-	}
-}
-
 func main() {
 	var (
-		showVersion      = flag.Bool("version", false, "Print version information")
-		cfgPath          = flag.String("config", "", "Path to the configuration file")
-		addr             = flag.String("addr", ":60000", "The port to listen on for HTTP requests")
-		eventsQueue      = flag.String("events-queue", "jex_adapter_events", "The AMQP queue name for jex-adapter events")
-		eventsRoutingKey = flag.String("events-key", "events.jex-adapter.*", "The routing key to use to listen for events")
-		amqpURI          string
+		showVersion = flag.Bool("version", false, "Print version information")
+		cfgPath     = flag.String("config", "", "Path to the configuration file")
+		addr        = flag.String("addr", ":60000", "The port to listen on for HTTP requests")
+		amqpURI     string
 	)
 
 	flag.Parse()
@@ -361,7 +267,6 @@ func main() {
 
 	amqpURI = cfg.GetString("amqp.uri")
 	exchangeName = cfg.GetString("amqp.exchange.name")
-	exchangeType := cfg.GetString("amqp.exchange.type")
 
 	app := New(cfg)
 
@@ -374,15 +279,6 @@ func main() {
 	go app.client.Listen()
 
 	app.client.SetupPublishing(exchangeName)
-
-	app.client.AddConsumer(
-		exchangeName,
-		exchangeType,
-		*eventsQueue,
-		*eventsRoutingKey,
-		app.eventsHandler,
-		0,
-	)
 
 	router := app.NewRouter()
 	logcabin.Error.Fatal(http.ListenAndServe(*addr, router))
