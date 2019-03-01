@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/cyverse-de/configurate"
-	"gopkg.in/cyverse-de/messaging.v4"
-	"gopkg.in/cyverse-de/model.v3"
+	"gopkg.in/cyverse-de/messaging.v6"
+	"gopkg.in/cyverse-de/model.v4"
 
 	"github.com/spf13/viper"
 	"github.com/streadway/amqp"
