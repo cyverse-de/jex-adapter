@@ -10,5 +10,5 @@ build:
   tagPolicy:
     gitCommit: {}
   artifacts:
-  - image: discoenv/jex-adapter
+  - image: harbor.cyverse.org/de/jex-adapter
   local: {}

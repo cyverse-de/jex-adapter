@@ -41,7 +41,7 @@ spec:
                 path: jobservices.yml
       containers:
       - name: jex-adapter
-        image: discoenv/jex-adapter
+        image: harbor.cyverse.org/de/jex-adapter
         volumeMounts:
           - name: localtime
             mountPath: /etc/localtime
