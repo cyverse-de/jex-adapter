@@ -25,10 +25,7 @@ var (
 )
 
 func shouldrun() bool {
-	if os.Getenv("RABBIT_PORT_5672_TCP_ADDR") != "" {
-		return true
-	}
-	return false
+	return os.Getenv("RABBIT_PORT_5672_TCP_ADDR") != ""
 }
 
 func uri() string {
@@ -113,7 +110,10 @@ func TestStop(t *testing.T) {
 	}
 	defer client.Close()
 	client.AddConsumer(exchangeName, "topic", "test_stop", stopKey, func(d amqp.Delivery) {
-		d.Ack(false)
+		err = d.Ack(false)
+		if err != nil {
+			t.Error(err)
+		}
 		stopMsg := &messaging.StopRequest{}
 		err = json.Unmarshal(d.Body, stopMsg)
 		if err != nil {
@@ -138,7 +138,7 @@ func TestStop(t *testing.T) {
 	},
 		0)
 
-	client.SetupPublishing(exchangeName)
+	client.SetupPublishing(exchangeName) // nolint:errcheck
 	go client.Listen()
 	time.Sleep(100 * time.Millisecond)
 	requestURL := fmt.Sprintf("http://for-a-test.org/stop/%s", invID)
@@ -168,7 +168,10 @@ func TestLaunch(t *testing.T) {
 	}
 	defer client.Close()
 	client.AddConsumer(exchangeName, "topic", "test_launch", messaging.LaunchesKey, func(d amqp.Delivery) {
-		d.Ack(false)
+		err = d.Ack(false)
+		if err != nil {
+			t.Error(err)
+		}
 		launch := &messaging.JobRequest{}
 		err = json.Unmarshal(d.Body, launch)
 		if err != nil {
@@ -187,7 +190,7 @@ func TestLaunch(t *testing.T) {
 		exitChan <- 1
 	},
 		0)
-	client.SetupPublishing(exchangeName)
+	client.SetupPublishing(exchangeName) // nolint:errcheck
 	go client.Listen()
 	time.Sleep(100 * time.Millisecond)
 	marshalledJob, err := json.Marshal(job)

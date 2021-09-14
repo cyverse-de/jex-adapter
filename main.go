@@ -278,7 +278,10 @@ func main() {
 
 	go app.client.Listen()
 
-	app.client.SetupPublishing(exchangeName)
+	err = app.client.SetupPublishing(exchangeName)
+	if err != nil {
+		logcabin.Error.Fatal(err)
+	}
 
 	router := app.NewRouter()
 	logcabin.Error.Fatal(http.ListenAndServe(*addr, router))
