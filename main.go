@@ -242,7 +242,6 @@ func main() {
 		showVersion = flag.Bool("version", false, "Print version information")
 		cfgPath     = flag.String("config", "", "Path to the configuration file")
 		addr        = flag.String("addr", ":60000", "The port to listen on for HTTP requests")
-		amqpURI     string
 	)
 
 	flag.Parse()
@@ -265,23 +264,7 @@ func main() {
 		logcabin.Error.Fatal(err)
 	}
 
-	amqpURI = cfg.GetString("amqp.uri")
-	exchangeName = cfg.GetString("amqp.exchange.name")
-
 	app := New(cfg)
-
-	app.client, err = messaging.NewClient(amqpURI, false)
-	if err != nil {
-		logcabin.Error.Fatal(err)
-	}
-	defer app.client.Close()
-
-	go app.client.Listen()
-
-	err = app.client.SetupPublishing(exchangeName)
-	if err != nil {
-		logcabin.Error.Fatal(err)
-	}
 
 	router := app.NewRouter()
 	logcabin.Error.Fatal(http.ListenAndServe(*addr, router))
