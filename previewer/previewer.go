@@ -2,56 +2,49 @@ package previewer
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 
-	"github.com/cyverse-de/model"
+	"github.com/cyverse-de/jex-adapter/logging"
+	"github.com/cyverse-de/jex-adapter/types"
 	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
+
+	"gopkg.in/cyverse-de/model.v4"
 )
 
-type Previewer struct {
-	router *echo.Echo
+var log = logging.Log.WithFields(logrus.Fields{"package": "previewer"})
+
+type Previewer struct{}
+
+func New() *Previewer {
+	return &Previewer{}
 }
 
-func New(router *echo.Echo) *Previewer {
-	return &Previewer{
-		router: router,
-	}
+func (p *Previewer) Routes(router types.Router) {
+	router.POST("", p.PreviewHandler)
+	router.POST("/", p.PreviewHandler)
 }
 
-func (p *Previewer) Router() *echo.Echo {
-	p.router.POST("", p.PreviewHandler)
-	p.router.POST("/", p.PreviewHandler)
-
-	return p.router
-}
-
-func (p *Previewer) PreviewHandler(c echo.Context) {
+func (p *Previewer) PreviewHandler(c echo.Context) error {
 	body := c.Request().Body
 
 	bodyBytes, err := ioutil.ReadAll(body)
 	if err != nil {
 		log.Error(err)
-		http.Error(writer, "Request had no body", http.StatusBadRequest)
-		return
+		return err
 	}
 
 	var params model.PreviewableStepParam
 	err = json.Unmarshal(bodyBytes, &params)
 	if err != nil {
 		log.Error(err)
-		http.Error(
-			writer,
-			fmt.Sprintf("Error parsing preview JSON: %s", err.Error()),
-			http.StatusBadRequest,
-		)
-		return
+		return err
 	}
 
-	p := map[string]string{
+	output := map[string]string{
 		"params": params.String(),
 	}
 
-	return c.JSON(http.StatusOK, p)
+	return c.JSON(http.StatusOK, output)
 }

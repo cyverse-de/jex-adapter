@@ -16,27 +16,17 @@ import (
 	"os"
 
 	"github.com/cyverse-de/version"
+	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
 
 	"github.com/cyverse-de/configurate"
 
+	"github.com/cyverse-de/jex-adapter/adapter"
 	"github.com/cyverse-de/jex-adapter/logging"
-	"github.com/gorilla/mux"
+	"github.com/cyverse-de/jex-adapter/previewer"
 )
 
 var log = logging.Log.WithFields(logrus.Fields{"package": "main"})
-
-var exchangeName string
-
-// NewRouter returns a newly configured *mux.Router.
-func (j *JEXAdapter) NewRouter() *mux.Router {
-	router := mux.NewRouter()
-	router.HandleFunc("/", j.home).Methods("GET")
-	router.HandleFunc("/", j.launch).Methods("POST")
-	router.HandleFunc("/stop/{invocation_id}", j.stop).Methods("DELETE")
-	router.HandleFunc("/arg-preview", j.preview).Methods("POST")
-	router.Handle("/debug/vars", http.DefaultServeMux)
-	return router
-}
 
 func main() {
 	var (
@@ -63,14 +53,26 @@ func main() {
 		log.Fatal(err)
 	}
 
-	app := New(cfg)
+	amqpURI := cfg.GetString("amqp.uri")
+	if amqpURI == "" {
+		log.Fatal("amqp.uri must be set in the configuration file")
+	}
 
-	router := mux.NewRouter()
-	router.HandleFunc("/", j.home).Methods("GET")
-	router.HandleFunc("/", j.launch).Methods("POST")
-	router.HandleFunc("/stop/{invocation_id}", j.stop).Methods("DELETE")
-	router.HandleFunc("/arg-preview", j.preview).Methods("POST")
-	router.Handle("/debug/vars", http.DefaultServeMux)
+	exchangeName := cfg.GetString("amqp.exchange.name")
+	if exchangeName == "" {
+		log.Fatal("amqp.exchange.name must be set in the configuration file")
+	}
+
+	p := previewer.New()
+	a := adapter.New(cfg, amqpURI, exchangeName)
+
+	router := echo.New()
+	router.HTTPErrorHandler = logging.HTTPErrorHandler
+
+	a.Routes(router)
+
+	previewrouter := router.Group("/arg-preview")
+	p.Routes(previewrouter)
 
 	log.Fatal(http.ListenAndServe(*addr, router))
 }
