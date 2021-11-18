@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/cyverse-de/configurate v0.0.0-20160830203814-4b85e07b4aea
 	github.com/cyverse-de/version v0.0.0-20160721234331-5119d6500655
+	github.com/jmoiron/sqlx v1.3.4
 	github.com/labstack/echo/v4 v4.6.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v0.0.0-20160830143246-16990631d4aa

@@ -63,6 +63,13 @@ func main() {
 		log.Fatal("amqp.exchange.name must be set in the configuration file")
 	}
 
+	dbURI := cfg.GetString("db.uri")
+	if dbURI == "" {
+		log.Fatal("db.uri must be set in the configuration file")
+	}
+
+	//dbconn := sqlx.MustConnect("postgres", dbURI)
+
 	p := previewer.New()
 	a := adapter.New(cfg, amqpURI, exchangeName)
 
