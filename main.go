@@ -16,13 +16,16 @@ import (
 	"os"
 
 	"github.com/cyverse-de/version"
+	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 
 	"github.com/cyverse-de/configurate"
 
 	"github.com/cyverse-de/jex-adapter/adapter"
+	"github.com/cyverse-de/jex-adapter/db"
 	"github.com/cyverse-de/jex-adapter/logging"
+	"github.com/cyverse-de/jex-adapter/millicores"
 	"github.com/cyverse-de/jex-adapter/previewer"
 )
 
@@ -30,9 +33,10 @@ var log = logging.Log.WithFields(logrus.Fields{"package": "main"})
 
 func main() {
 	var (
-		showVersion = flag.Bool("version", false, "Print version information")
-		cfgPath     = flag.String("config", "", "Path to the configuration file")
-		addr        = flag.String("addr", ":60000", "The port to listen on for HTTP requests")
+		showVersion       = flag.Bool("version", false, "Print version information")
+		cfgPath           = flag.String("config", "", "Path to the configuration file")
+		addr              = flag.String("addr", ":60000", "The port to listen on for HTTP requests")
+		defaultMillicores = flag.Float64("default-millicores", 4000.0, "The default number of millicores reserved for an analysis.")
 	)
 
 	flag.Parse()
@@ -68,10 +72,12 @@ func main() {
 		log.Fatal("db.uri must be set in the configuration file")
 	}
 
-	//dbconn := sqlx.MustConnect("postgres", dbURI)
+	dbconn := sqlx.MustConnect("postgres", dbURI)
+	dbase := db.New(dbconn)
+	detector := millicores.New(dbase, *defaultMillicores)
 
 	p := previewer.New()
-	a := adapter.New(cfg, amqpURI, exchangeName)
+	a := adapter.New(cfg, detector, amqpURI, exchangeName)
 
 	router := echo.New()
 	router.HTTPErrorHandler = logging.HTTPErrorHandler
