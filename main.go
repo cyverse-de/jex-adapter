@@ -18,6 +18,7 @@ import (
 	"github.com/cyverse-de/version"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
 
 	"github.com/cyverse-de/configurate"
@@ -37,9 +38,11 @@ func main() {
 		cfgPath           = flag.String("config", "", "Path to the configuration file")
 		addr              = flag.String("addr", ":60000", "The port to listen on for HTTP requests")
 		defaultMillicores = flag.Float64("default-millicores", 4000.0, "The default number of millicores reserved for an analysis.")
+		logLevel          = flag.String("log-level", "info", "One of trace, debug, info, warn, error, fatal, or panic.")
 	)
 
 	flag.Parse()
+	logging.SetupLogging(*logLevel)
 
 	if *showVersion {
 		version.AppVersion()
@@ -81,6 +84,16 @@ func main() {
 
 	router := echo.New()
 	router.HTTPErrorHandler = logging.HTTPErrorHandler
+
+	routerLogger := log.Writer()
+	defer routerLogger.Close()
+
+	router.Use(middleware.LoggerWithConfig(
+		middleware.LoggerConfig{
+			Format: "${method} ${uri} ${status}",
+			Output: routerLogger,
+		},
+	))
 
 	a.Routes(router)
 
