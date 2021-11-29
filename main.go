@@ -20,6 +20,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/cyverse-de/messaging.v6"
 
 	"github.com/cyverse-de/configurate"
 
@@ -79,8 +80,15 @@ func main() {
 	dbase := db.New(dbconn)
 	detector := millicores.New(dbase, *defaultMillicores)
 
+	amqpclient, err := messaging.NewClient(amqpURI, false)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	messenger := adapter.NewAMQPMessenger(exchangeName, amqpclient)
+
 	p := previewer.New()
-	a := adapter.New(cfg, detector, amqpURI, exchangeName)
+	a := adapter.New(cfg, detector, messenger)
 
 	router := echo.New()
 	router.HTTPErrorHandler = logging.HTTPErrorHandler
