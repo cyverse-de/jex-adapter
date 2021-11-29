@@ -7,15 +7,18 @@ require (
 	github.com/cyverse-de/version v0.0.0-20160721234331-5119d6500655
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/labstack/echo/v4 v4.6.1
+	github.com/proullon/ramsql v0.0.0-20211120092837-c8d0a408b939
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v0.0.0-20160830143246-16990631d4aa
 	github.com/streadway/amqp v0.0.0-20160311215503-2e25825abdbd
+	github.com/stretchr/testify v1.7.0
 	gopkg.in/cyverse-de/messaging.v6 v6.0.0
 	gopkg.in/cyverse-de/model.v4 v4.0.0-20191010001558-736b5a572acd
 )
 
 require (
 	github.com/cyverse-de/model v0.0.0-20160830212418-433e08f9889d // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.3.2-0.20160816051541-f12c6236fe7b // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/hashicorp/hcl v0.0.0-20160822214145-baeb59c71071 // indirect
@@ -29,11 +32,11 @@ require (
 	github.com/pelletier/go-toml v0.3.6-0.20160823074707-5a62685873ef // indirect
 	github.com/pkg/errors v0.7.1 // indirect
 	github.com/pkg/sftp v0.0.0-20160721231453-a71e8f580e3b // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/afero v0.0.0-20160821083612-20500e2abd0d // indirect
 	github.com/spf13/cast v0.0.0-20160730092037-e31f36ffc91a // indirect
 	github.com/spf13/jwalterweatherman v0.0.0-20160311093646-33c24e77fb80 // indirect
 	github.com/spf13/pflag v0.0.0-20160820154156-103ce5cd2042 // indirect
-	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.1 // indirect
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
@@ -43,4 +46,5 @@ require (
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324 // indirect
 	gopkg.in/check.v1 v1.0.0-20160105164936-4f90aeace3a2 // indirect
 	gopkg.in/yaml.v2 v2.2.2 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 )
