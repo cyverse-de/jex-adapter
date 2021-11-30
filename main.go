@@ -29,6 +29,8 @@ import (
 	"github.com/cyverse-de/jex-adapter/logging"
 	"github.com/cyverse-de/jex-adapter/millicores"
 	"github.com/cyverse-de/jex-adapter/previewer"
+
+	_ "github.com/lib/pq"
 )
 
 var log = logging.Log.WithFields(logrus.Fields{"package": "main"})
@@ -82,6 +84,10 @@ func main() {
 
 	amqpclient, err := messaging.NewClient(amqpURI, false)
 	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err = amqpclient.SetupPublishing(exchangeName); err != nil {
 		log.Fatal(err)
 	}
 
