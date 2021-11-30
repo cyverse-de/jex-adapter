@@ -21,6 +21,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"gopkg.in/cyverse-de/messaging.v6"
 
 	"github.com/cyverse-de/configurate"
@@ -35,6 +36,61 @@ import (
 )
 
 var log = logging.Log.WithFields(logrus.Fields{"package": "main"})
+
+func dbConnection(cfg *viper.Viper) *sqlx.DB {
+	log := log.WithFields(logrus.Fields{"context": "database configuration"})
+
+	dbURI := cfg.GetString("db.uri")
+	if dbURI == "" {
+		log.Fatal("db.uri must be set in the configuration file")
+	}
+
+	dbURL, err := url.Parse(dbURI)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Infof("db host is %s:%s%s?%s", dbURL.Hostname(), dbURL.Port(), dbURL.Path, dbURL.RawQuery)
+
+	dbconn := sqlx.MustConnect("postgres", dbURI)
+
+	log.Info("connected to the database")
+
+	return dbconn
+}
+
+func amqpConnection(cfg *viper.Viper) (*messaging.Client, string) {
+	log := log.WithFields(logrus.Fields{"context": "amqp configuration"})
+
+	amqpURI := cfg.GetString("amqp.uri")
+	if amqpURI == "" {
+		log.Fatal("amqp.uri must be set in the configuration file")
+	}
+
+	aURL, err := url.Parse(amqpURI)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Infof("amqp broker host is %s:%s%s", aURL.Hostname(), aURL.Port(), aURL.Path)
+
+	exchangeName := cfg.GetString("amqp.exchange.name")
+	if exchangeName == "" {
+		log.Fatal("amqp.exchange.name must be set in the configuration file")
+	}
+	log.Infof("amqp exchange name is %s", exchangeName)
+
+	amqpclient, err := messaging.NewClient(amqpURI, false)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err = amqpclient.SetupPublishing(exchangeName); err != nil {
+		log.Fatal(err)
+	}
+
+	log.Info("set up AMQP connection")
+
+	return amqpclient, exchangeName
+}
 
 func main() {
 	log := log.WithFields(logrus.Fields{"context": "main function"})
@@ -71,44 +127,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Get the database configuration and connect
-	dbURI := cfg.GetString("db.uri")
-	if dbURI == "" {
-		log.Fatal("db.uri must be set in the configuration file")
-	}
-	dbURL, err := url.Parse(dbURI)
-	if err != nil {
-		log.Fatal(err)
-	}
-	dbconn := sqlx.MustConnect("postgres", dbURI)
-	log.Infof("db host is %s:%s%s?%s", dbURL.Hostname(), dbURL.Port(), dbURL.Path, dbURL.RawQuery)
-	log.Info("connected to the database")
+	dbconn := dbConnection(cfg)
+	amqpclient, exchangeName := amqpConnection(cfg)
 
-	// Get the AMQP configuration and connect
-	amqpURI := cfg.GetString("amqp.uri")
-	if amqpURI == "" {
-		log.Fatal("amqp.uri must be set in the configuration file")
-	}
-	aURL, err := url.Parse(amqpURI)
-	if err != nil {
-		log.Fatal(err)
-	}
-	exchangeName := cfg.GetString("amqp.exchange.name")
-	if exchangeName == "" {
-		log.Fatal("amqp.exchange.name must be set in the configuration file")
-	}
-	log.Infof("amqp broker host is %s:%s%s", aURL.Hostname(), aURL.Port(), aURL.Path)
-	log.Infof("amqp exchange name is %s", exchangeName)
-	amqpclient, err := messaging.NewClient(amqpURI, false)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err = amqpclient.SetupPublishing(exchangeName); err != nil {
-		log.Fatal(err)
-	}
-	log.Info("set up AMQP connection")
-
-	// Set up the application
 	dbase := db.New(dbconn)
 	detector := millicores.New(dbase, *defaultMillicores)
 	messenger := adapter.NewAMQPMessenger(exchangeName, amqpclient)
