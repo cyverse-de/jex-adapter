@@ -36,6 +36,8 @@ import (
 var log = logging.Log.WithFields(logrus.Fields{"package": "main"})
 
 func main() {
+	log := log.WithFields(logrus.Fields{"context": "main function"})
+
 	var (
 		showVersion       = flag.Bool("version", false, "Print version information")
 		cfgPath           = flag.String("config", "", "Path to the configuration file")
@@ -47,6 +49,8 @@ func main() {
 	flag.Parse()
 	logging.SetupLogging(*logLevel)
 
+	log.Infof("log level is %s", *logLevel)
+
 	if *showVersion {
 		version.AppVersion()
 		os.Exit(0)
@@ -57,6 +61,8 @@ func main() {
 		flag.PrintDefaults()
 		os.Exit(-1)
 	}
+
+	log.Infof("config path is %s", *cfgPath)
 
 	cfg, err := configurate.InitDefaults(*cfgPath, configurate.JobServicesDefaults)
 	if err != nil {
@@ -79,6 +85,8 @@ func main() {
 	}
 
 	dbconn := sqlx.MustConnect("postgres", dbURI)
+	log.Info("connected to the database")
+
 	dbase := db.New(dbconn)
 	detector := millicores.New(dbase, *defaultMillicores)
 
@@ -90,6 +98,8 @@ func main() {
 	if err = amqpclient.SetupPublishing(exchangeName); err != nil {
 		log.Fatal(err)
 	}
+
+	log.Info("set up AMQP connection")
 
 	messenger := adapter.NewAMQPMessenger(exchangeName, amqpclient)
 
@@ -114,5 +124,6 @@ func main() {
 	previewrouter := router.Group("/arg-preview")
 	p.Routes(previewrouter)
 
+	log.Infof("starting server on %s", *addr)
 	log.Fatal(http.ListenAndServe(*addr, router))
 }
