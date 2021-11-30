@@ -13,6 +13,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/cyverse-de/version"
@@ -50,6 +51,7 @@ func main() {
 	logging.SetupLogging(*logLevel)
 
 	log.Infof("log level is %s", *logLevel)
+	log.Infof("default millicores is %f", *defaultMillicores)
 
 	if *showVersion {
 		version.AppVersion()
@@ -69,38 +71,46 @@ func main() {
 		log.Fatal(err)
 	}
 
-	amqpURI := cfg.GetString("amqp.uri")
-	if amqpURI == "" {
-		log.Fatal("amqp.uri must be set in the configuration file")
-	}
-
-	exchangeName := cfg.GetString("amqp.exchange.name")
-	if exchangeName == "" {
-		log.Fatal("amqp.exchange.name must be set in the configuration file")
-	}
-
+	// Get the database configuration and connect
 	dbURI := cfg.GetString("db.uri")
 	if dbURI == "" {
 		log.Fatal("db.uri must be set in the configuration file")
 	}
-
+	dbURL, err := url.Parse(dbURI)
+	if err != nil {
+		log.Fatal(err)
+	}
 	dbconn := sqlx.MustConnect("postgres", dbURI)
+	log.Infof("db host is %s:%s%s?%s", dbURL.Hostname(), dbURL.Port(), dbURL.Path, dbURL.RawQuery)
 	log.Info("connected to the database")
 
-	dbase := db.New(dbconn)
-	detector := millicores.New(dbase, *defaultMillicores)
-
+	// Get the AMQP configuration and connect
+	amqpURI := cfg.GetString("amqp.uri")
+	if amqpURI == "" {
+		log.Fatal("amqp.uri must be set in the configuration file")
+	}
+	aURL, err := url.Parse(amqpURI)
+	if err != nil {
+		log.Fatal(err)
+	}
+	exchangeName := cfg.GetString("amqp.exchange.name")
+	if exchangeName == "" {
+		log.Fatal("amqp.exchange.name must be set in the configuration file")
+	}
+	log.Infof("amqp broker host is %s:%s%s", aURL.Hostname(), aURL.Port(), aURL.Path)
+	log.Infof("amqp exchange name is %s", exchangeName)
 	amqpclient, err := messaging.NewClient(amqpURI, false)
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	if err = amqpclient.SetupPublishing(exchangeName); err != nil {
 		log.Fatal(err)
 	}
-
 	log.Info("set up AMQP connection")
 
+	// Set up the application
+	dbase := db.New(dbconn)
+	detector := millicores.New(dbase, *defaultMillicores)
 	messenger := adapter.NewAMQPMessenger(exchangeName, amqpclient)
 
 	p := previewer.New()
