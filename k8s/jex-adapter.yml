@@ -62,6 +62,8 @@ spec:
         args:
           - --config
           - /etc/iplant/de/jobservices.yml
+          - --log-level
+          - debug
         ports:
           - name: listen-port
             containerPort: 60000
