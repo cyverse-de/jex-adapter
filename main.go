@@ -9,245 +9,105 @@
 package main
 
 import (
-	"encoding/json"
 	_ "expvar"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/cyverse-de/version"
+	"github.com/jmoiron/sqlx"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
+	"gopkg.in/cyverse-de/messaging.v6"
 
 	"github.com/cyverse-de/configurate"
-	"github.com/cyverse-de/logcabin"
-	"gopkg.in/cyverse-de/messaging.v6"
-	"gopkg.in/cyverse-de/model.v4"
 
-	"github.com/gorilla/mux"
-	"github.com/spf13/viper"
-	"github.com/streadway/amqp"
+	"github.com/cyverse-de/jex-adapter/adapter"
+	"github.com/cyverse-de/jex-adapter/db"
+	"github.com/cyverse-de/jex-adapter/logging"
+	"github.com/cyverse-de/jex-adapter/millicores"
+	"github.com/cyverse-de/jex-adapter/previewer"
+
+	_ "github.com/lib/pq"
 )
 
-var (
-	exchangeName string
-)
+var log = logging.Log.WithFields(logrus.Fields{"package": "main"})
 
-// JEXAdapter contains the application state for jex-adapter.
-type JEXAdapter struct {
-	cfg    *viper.Viper
-	client *messaging.Client
+func dbConnection(cfg *viper.Viper) *sqlx.DB {
+	log := log.WithFields(logrus.Fields{"context": "database configuration"})
+
+	dbURI := cfg.GetString("db.uri")
+	if dbURI == "" {
+		log.Fatal("db.uri must be set in the configuration file")
+	}
+
+	dbURL, err := url.Parse(dbURI)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Infof("db host is %s:%s%s?%s", dbURL.Hostname(), dbURL.Port(), dbURL.Path, dbURL.RawQuery)
+
+	dbconn := sqlx.MustConnect("postgres", dbURI)
+
+	log.Info("connected to the database")
+
+	return dbconn
 }
 
-// New returns a *JEXAdapter
-func New(cfg *viper.Viper) *JEXAdapter {
-	return &JEXAdapter{
-		cfg: cfg,
+func amqpConnection(cfg *viper.Viper) (*messaging.Client, string) {
+	log := log.WithFields(logrus.Fields{"context": "amqp configuration"})
+
+	amqpURI := cfg.GetString("amqp.uri")
+	if amqpURI == "" {
+		log.Fatal("amqp.uri must be set in the configuration file")
 	}
-}
 
-func amqpError(err error) {
-	amqpErr, ok := err.(*amqp.Error)
-	if !ok || amqpErr.Code != 0 {
-		logcabin.Error.Fatal(err)
-	}
-}
-
-func (j *JEXAdapter) home(writer http.ResponseWriter, request *http.Request) {
-	fmt.Fprintf(writer, "Welcome to the JEX.\n")
-}
-
-func (j *JEXAdapter) stop(writer http.ResponseWriter, request *http.Request) {
-	var (
-		invID string
-		ok    bool
-		err   error
-		v     = mux.Vars(request)
-	)
-
-	logcabin.Info.Printf("Request received:\n%#v\n", request)
-
-	logcabin.Info.Println("Getting invocation ID out of the Vars")
-	if invID, ok = v["invocation_id"]; !ok {
-		http.Error(writer, "Missing job id in URL", http.StatusBadRequest)
-		logcabin.Error.Print("Missing job id in URL")
-		return
-	}
-	logcabin.Info.Printf("Invocation ID is %s\n", invID)
-
-	logcabin.Info.Println("Sending stop request")
-	err = j.client.SendStopRequest(invID, "root", "because I said to")
+	aURL, err := url.Parse(amqpURI)
 	if err != nil {
-		http.Error(
-			writer,
-			fmt.Sprintf("Error sending stop request %s", err.Error()),
-			http.StatusInternalServerError,
-		)
-		amqpError(err)
-		return
+		log.Fatal(err)
 	}
-	logcabin.Info.Println("Done sending stop request")
-}
+	log.Infof("amqp broker host is %s:%s%s", aURL.Hostname(), aURL.Port(), aURL.Path)
 
-func (j *JEXAdapter) launch(writer http.ResponseWriter, request *http.Request) {
-	bodyBytes, err := ioutil.ReadAll(request.Body)
+	exchangeName := cfg.GetString("amqp.exchange.name")
+	if exchangeName == "" {
+		log.Fatal("amqp.exchange.name must be set in the configuration file")
+	}
+	log.Infof("amqp exchange name is %s", exchangeName)
+
+	amqpclient, err := messaging.NewClient(amqpURI, false)
 	if err != nil {
-		logcabin.Error.Print(err)
-		http.Error(writer, "Request had no body", http.StatusBadRequest)
-		return
+		log.Fatal(err)
 	}
 
-	logcabin.Info.Println(string(bodyBytes))
-
-	job, err := model.NewFromData(j.cfg, bodyBytes)
-	if err != nil {
-		logcabin.Error.Print(err)
-		http.Error(
-			writer,
-			fmt.Sprintf("Failed to create job from json: %s", err.Error()),
-			http.StatusBadRequest,
-		)
-		return
+	if err = amqpclient.SetupPublishing(exchangeName); err != nil {
+		log.Fatal(err)
 	}
 
-	// Create the stop request channel
-	stopRequestChannel, err := j.client.CreateQueue(
-		messaging.StopQueueName(job.InvocationID),
-		exchangeName,
-		messaging.StopRequestKey(job.InvocationID),
-		false,
-		true,
-	)
-	if err != nil {
-		logcabin.Error.Print(err)
-		http.Error(
-			writer,
-			fmt.Sprintf("Error creating stop request queue: %s", err.Error()),
-			http.StatusInternalServerError,
-		)
-		amqpError(err)
-	}
-	defer stopRequestChannel.Close()
+	log.Info("set up AMQP connection")
 
-	launchRequest := messaging.NewLaunchRequest(job)
-	if err != nil {
-		logcabin.Error.Print(err)
-		http.Error(
-			writer,
-			fmt.Sprintf("Error creating launch request: %s", err.Error()),
-			http.StatusInternalServerError,
-		)
-		amqpError(err)
-		return
-	}
-
-	launchJSON, err := json.Marshal(launchRequest)
-	if err != nil {
-		logcabin.Error.Print(err)
-		http.Error(
-			writer,
-			fmt.Sprintf("Error creating launch request JSON: %s", err.Error()),
-			http.StatusInternalServerError,
-		)
-		return
-	}
-
-	err = j.client.Publish(messaging.LaunchesKey, launchJSON)
-	if err != nil {
-		logcabin.Error.Print(err)
-		http.Error(
-			writer,
-			fmt.Sprintf("Error publishing launch request: %s", err.Error()),
-			http.StatusInternalServerError,
-		)
-		amqpError(err)
-		return
-	}
-}
-
-//Previewer contains a list of params that need to be constructed into a
-//command-line preview.
-type Previewer struct {
-	Params model.PreviewableStepParam `json:"params"`
-}
-
-// Preview returns the command-line preview as a string.
-func (p *Previewer) Preview() string {
-	return p.Params.String()
-}
-
-//PreviewerReturn is what the arg-preview endpoint returns.
-type PreviewerReturn struct {
-	Params string `json:"params"`
-}
-
-func (j *JEXAdapter) preview(writer http.ResponseWriter, request *http.Request) {
-	bodyBytes, err := ioutil.ReadAll(request.Body)
-	if err != nil {
-		logcabin.Error.Print(err)
-		http.Error(writer, "Request had no body", http.StatusBadRequest)
-		return
-	}
-
-	previewer := &Previewer{}
-	err = json.Unmarshal(bodyBytes, previewer)
-	if err != nil {
-		logcabin.Error.Print(err)
-		http.Error(
-			writer,
-			fmt.Sprintf("Error parsing preview JSON: %s", err.Error()),
-			http.StatusBadRequest,
-		)
-		return
-	}
-
-	var paramMap PreviewerReturn
-	paramMap.Params = previewer.Params.String()
-	outgoingJSON, err := json.Marshal(paramMap)
-	if err != nil {
-		logcabin.Error.Print(err)
-		http.Error(
-			writer,
-			fmt.Sprintf("Error creating response JSON: %s", err.Error()),
-			http.StatusInternalServerError,
-		)
-		return
-	}
-
-	_, err = writer.Write(outgoingJSON)
-	if err != nil {
-		logcabin.Error.Print(err)
-		http.Error(
-			writer,
-			fmt.Sprintf("Error writing response: %s", err.Error()),
-			http.StatusInternalServerError,
-		)
-		return
-	}
-}
-
-// NewRouter returns a newly configured *mux.Router.
-func (j *JEXAdapter) NewRouter() *mux.Router {
-	router := mux.NewRouter()
-	router.HandleFunc("/", j.home).Methods("GET")
-	router.HandleFunc("/", j.launch).Methods("POST")
-	router.HandleFunc("/stop/{invocation_id}", j.stop).Methods("DELETE")
-	router.HandleFunc("/arg-preview", j.preview).Methods("POST")
-	router.Handle("/debug/vars", http.DefaultServeMux)
-	return router
+	return amqpclient, exchangeName
 }
 
 func main() {
+	log := log.WithFields(logrus.Fields{"context": "main function"})
+
 	var (
-		showVersion = flag.Bool("version", false, "Print version information")
-		cfgPath     = flag.String("config", "", "Path to the configuration file")
-		addr        = flag.String("addr", ":60000", "The port to listen on for HTTP requests")
-		amqpURI     string
+		showVersion       = flag.Bool("version", false, "Print version information")
+		cfgPath           = flag.String("config", "", "Path to the configuration file")
+		addr              = flag.String("addr", ":60000", "The port to listen on for HTTP requests")
+		defaultMillicores = flag.Float64("default-millicores", 4000.0, "The default number of millicores reserved for an analysis.")
+		logLevel          = flag.String("log-level", "info", "One of trace, debug, info, warn, error, fatal, or panic.")
 	)
 
 	flag.Parse()
+	logging.SetupLogging(*logLevel)
 
-	logcabin.Init("jex-adapter", "jex-adapter")
+	log.Infof("log level is %s", *logLevel)
+	log.Infof("default millicores is %f", *defaultMillicores)
 
 	if *showVersion {
 		version.AppVersion()
@@ -260,29 +120,41 @@ func main() {
 		os.Exit(-1)
 	}
 
+	log.Infof("config path is %s", *cfgPath)
+
 	cfg, err := configurate.InitDefaults(*cfgPath, configurate.JobServicesDefaults)
 	if err != nil {
-		logcabin.Error.Fatal(err)
+		log.Fatal(err)
 	}
 
-	amqpURI = cfg.GetString("amqp.uri")
-	exchangeName = cfg.GetString("amqp.exchange.name")
+	dbconn := dbConnection(cfg)
+	amqpclient, exchangeName := amqpConnection(cfg)
 
-	app := New(cfg)
+	dbase := db.New(dbconn)
+	detector := millicores.New(dbase, *defaultMillicores)
+	messenger := adapter.NewAMQPMessenger(exchangeName, amqpclient)
 
-	app.client, err = messaging.NewClient(amqpURI, false)
-	if err != nil {
-		logcabin.Error.Fatal(err)
-	}
-	defer app.client.Close()
+	p := previewer.New()
+	a := adapter.New(cfg, detector, messenger)
 
-	go app.client.Listen()
+	router := echo.New()
+	router.HTTPErrorHandler = logging.HTTPErrorHandler
 
-	err = app.client.SetupPublishing(exchangeName)
-	if err != nil {
-		logcabin.Error.Fatal(err)
-	}
+	routerLogger := log.Writer()
+	defer routerLogger.Close()
 
-	router := app.NewRouter()
-	logcabin.Error.Fatal(http.ListenAndServe(*addr, router))
+	router.Use(middleware.LoggerWithConfig(
+		middleware.LoggerConfig{
+			Format: "${method} ${uri} ${status}",
+			Output: routerLogger,
+		},
+	))
+
+	a.Routes(router)
+
+	previewrouter := router.Group("/arg-preview")
+	p.Routes(previewrouter)
+
+	log.Infof("starting server on %s", *addr)
+	log.Fatal(http.ListenAndServe(*addr, router))
 }
