@@ -137,6 +137,9 @@ func main() {
 	p := previewer.New()
 	a := adapter.New(cfg, detector, messenger)
 
+	go a.Run()
+	defer a.Finish()
+
 	router := echo.New()
 	router.HTTPErrorHandler = logging.HTTPErrorHandler
 
