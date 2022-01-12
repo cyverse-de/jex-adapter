@@ -131,7 +131,10 @@ func main() {
 	amqpclient, exchangeName := amqpConnection(cfg)
 
 	dbase := db.New(dbconn)
-	detector := millicores.New(dbase, *defaultMillicores)
+	detector, err := millicores.New(dbase, *defaultMillicores)
+	if err != nil {
+		log.Fatal(err)
+	}
 	messenger := adapter.NewAMQPMessenger(exchangeName, amqpclient)
 
 	p := previewer.New()
