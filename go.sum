@@ -1,5 +1,7 @@
 github.com/DATA-DOG/go-sqlmock v1.5.0 h1:Shsta01QNfFxHCfpW6YH2STWB0MudeXXEWMr20OEh60=
 github.com/DATA-DOG/go-sqlmock v1.5.0/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
+github.com/cockroachdb/apd v1.1.0 h1:3LFP3629v+1aKXU5Q37mxmRxX/pIu1nijXydLShEq5I=
+github.com/cockroachdb/apd v1.1.0/go.mod h1:8Sl8LxpKi29FqWXR16WEFZRNSz3SoPzUzeMeY4+DwBQ=
 github.com/cyverse-de/configurate v0.0.0-20160830203814-4b85e07b4aea h1:vYlBrzIKegnCTm3XIjbeJfq0gF837X8ovghehxvzPGk=
 github.com/cyverse-de/configurate v0.0.0-20160830203814-4b85e07b4aea/go.mod h1:QMZ4G8bX5f0vKiH9+/2JqV687mN1byJ18tjZwIJIagI=
 github.com/cyverse-de/model v0.0.0-20160830212418-433e08f9889d h1:PIDb+UJlVX3+ctlt44as9cRBSCVyorn/qvaNdaqOjB0=

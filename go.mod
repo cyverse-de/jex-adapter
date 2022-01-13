@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
+	github.com/cockroachdb/apd v1.1.0
 	github.com/cyverse-de/configurate v0.0.0-20160830203814-4b85e07b4aea
 	github.com/cyverse-de/version v0.0.0-20160721234331-5119d6500655
 	github.com/google/uuid v1.3.0
