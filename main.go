@@ -9,12 +9,14 @@
 package main
 
 import (
+	"context"
 	_ "expvar"
 	"flag"
 	"fmt"
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/cyverse-de/messaging/v9"
 	"github.com/cyverse-de/version"
@@ -31,6 +33,17 @@ import (
 	"github.com/cyverse-de/jex-adapter/logging"
 	"github.com/cyverse-de/jex-adapter/millicores"
 	"github.com/cyverse-de/jex-adapter/previewer"
+
+	"github.com/uptrace/opentelemetry-go-extra/otelsql"
+	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	tracesdk "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 
 	_ "github.com/lib/pq"
 )
@@ -51,7 +64,7 @@ func dbConnection(cfg *viper.Viper) *sqlx.DB {
 	}
 	log.Infof("db host is %s:%s%s?%s", dbURL.Hostname(), dbURL.Port(), dbURL.Path, dbURL.RawQuery)
 
-	dbconn := sqlx.MustConnect("postgres", dbURI)
+	dbconn := otelsqlx.MustConnect("postgres", dbURI, otelsql.WithAttributes(semconv.DBSystemPostgreSQL))
 
 	log.Info("connected to the database")
 
@@ -92,6 +105,24 @@ func amqpConnection(cfg *viper.Viper) (*messaging.Client, string) {
 	return amqpclient, exchangeName
 }
 
+func jaegerTracerProvider(url string) (*tracesdk.TracerProvider, error) {
+	// Create the Jaeger exporter
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(url)))
+	if err != nil {
+		return nil, err
+	}
+
+	tp := tracesdk.NewTracerProvider(
+		tracesdk.WithBatcher(exp),
+		tracesdk.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String("jex-adapter"),
+		)),
+	)
+
+	return tp, nil
+}
+
 func main() {
 	log := log.WithFields(logrus.Fields{"context": "main function"})
 
@@ -101,10 +132,41 @@ func main() {
 		addr              = flag.String("addr", ":60000", "The port to listen on for HTTP requests")
 		defaultMillicores = flag.Float64("default-millicores", 4000.0, "The default number of millicores reserved for an analysis.")
 		logLevel          = flag.String("log-level", "info", "One of trace, debug, info, warn, error, fatal, or panic.")
+
+		tracerProvider *tracesdk.TracerProvider
 	)
 
 	flag.Parse()
 	logging.SetupLogging(*logLevel)
+
+	otelTracesExporter := os.Getenv("OTEL_TRACES_EXPORTER")
+	if otelTracesExporter == "jaeger" {
+		jaegerEndpoint := os.Getenv("OTEL_EXPORTER_JAEGER_ENDPOINT")
+		if jaegerEndpoint == "" {
+			log.Warn("Jaeger set as OpenTelemetry trace exporter, but no Jaeger endpoint configured.")
+		} else {
+			tp, err := jaegerTracerProvider(jaegerEndpoint)
+			if err != nil {
+				log.Fatal(err)
+			}
+			tracerProvider = tp
+			otel.SetTracerProvider(tp)
+			otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+		}
+	}
+
+	if tracerProvider != nil {
+		tracerCtx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		defer func(tracerContext context.Context) {
+			ctx, cancel := context.WithTimeout(tracerContext, time.Second*5)
+			defer cancel()
+			if err := tracerProvider.Shutdown(ctx); err != nil {
+				log.Fatal(err)
+			}
+		}(tracerCtx)
+	}
 
 	log.Infof("log level is %s", *logLevel)
 	log.Infof("default millicores is %f", *defaultMillicores)
@@ -144,6 +206,7 @@ func main() {
 	defer a.Finish()
 
 	router := echo.New()
+	router.Use(otelecho.Middleware("jex-adapter"))
 	router.HTTPErrorHandler = logging.HTTPErrorHandler
 
 	routerLogger := log.Writer()
