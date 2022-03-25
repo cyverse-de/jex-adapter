@@ -7,10 +7,9 @@ import (
 
 	"github.com/cyverse-de/jex-adapter/logging"
 	"github.com/cyverse-de/jex-adapter/types"
+	"github.com/cyverse-de/model"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
-
-	"gopkg.in/cyverse-de/model.v4"
 )
 
 var log = logging.Log.WithFields(logrus.Fields{"package": "previewer"})

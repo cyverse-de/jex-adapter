@@ -16,13 +16,13 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/cyverse-de/messaging/v9"
 	"github.com/cyverse-de/version"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"gopkg.in/cyverse-de/messaging.v6"
 
 	"github.com/cyverse-de/configurate"
 
