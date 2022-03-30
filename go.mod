@@ -6,7 +6,8 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/cockroachdb/apd v1.1.0
 	github.com/cyverse-de/configurate v0.0.0-20190318152107-8f767cb828d9
-	github.com/cyverse-de/messaging/v9 v9.1.1
+	github.com/cyverse-de/messaging/v9 v9.1.3
+	github.com/cyverse-de/model/v6 v6.0.1
 	github.com/cyverse-de/version v0.0.0-20160721234331-5119d6500655
 	github.com/google/uuid v1.3.0
 	github.com/jmoiron/sqlx v1.3.4
@@ -19,7 +20,7 @@ require (
 	github.com/uptrace/opentelemetry-go-extra/otelsql v0.1.10
 	github.com/uptrace/opentelemetry-go-extra/otelsqlx v0.1.10
 	go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.30.0
-	go.opentelemetry.io/otel v1.6.0
+	go.opentelemetry.io/otel v1.6.1
 	go.opentelemetry.io/otel/exporters/jaeger v1.6.0
 	go.opentelemetry.io/otel/sdk v1.6.0
 )
@@ -47,7 +48,7 @@ require (
 	github.com/valyala/fasttemplate v1.2.1 // indirect
 	go.opentelemetry.io/otel/internal/metric v0.27.0 // indirect
 	go.opentelemetry.io/otel/metric v0.27.0 // indirect
-	go.opentelemetry.io/otel/trace v1.6.0 // indirect
+	go.opentelemetry.io/otel/trace v1.6.1 // indirect
 	golang.org/x/crypto v0.0.0-20211108221036-ceb1ce70b4fa // indirect
 	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f // indirect
 	golang.org/x/text v0.3.7 // indirect
@@ -58,9 +59,8 @@ require (
 )
 
 require (
-	github.com/cyverse-de/model v0.0.0-20211027151045-62de96618208
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
-	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8 // indirect
+	golang.org/x/sys v0.0.0-20220330033206-e17cdc41300f // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
 )

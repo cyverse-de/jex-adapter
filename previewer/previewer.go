@@ -7,7 +7,7 @@ import (
 
 	"github.com/cyverse-de/jex-adapter/logging"
 	"github.com/cyverse-de/jex-adapter/types"
-	"github.com/cyverse-de/model"
+	"github.com/cyverse-de/model/v6"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 )
