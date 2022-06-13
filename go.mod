@@ -6,14 +6,20 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/cockroachdb/apd v1.1.0
 	github.com/cyverse-de/configurate v0.0.0-20190318152107-8f767cb828d9
+	github.com/cyverse-de/go-mod/cfg v0.0.1
+	github.com/cyverse-de/go-mod/gotelnats v0.0.10
 	github.com/cyverse-de/go-mod/otelutils v0.0.2
+	github.com/cyverse-de/go-mod/pbinit v0.0.1
+	github.com/cyverse-de/go-mod/protobufjson v0.0.3
 	github.com/cyverse-de/messaging/v9 v9.1.3
 	github.com/cyverse-de/model/v6 v6.0.1
+	github.com/cyverse-de/p/go/qms v0.0.1
 	github.com/cyverse-de/version v0.0.0-20160721234331-5119d6500655
 	github.com/google/uuid v1.3.0
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/labstack/echo/v4 v4.7.0
 	github.com/lib/pq v1.2.0
+	github.com/nats-io/nats.go v1.14.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.10.1
 	github.com/streadway/amqp v1.0.1-0.20200716223359-e6b33f460591
@@ -58,20 +64,13 @@ require (
 )
 
 require (
-	github.com/cyverse-de/go-mod/cfg v0.0.1 // indirect
-	github.com/cyverse-de/go-mod/gotelnats v0.0.10 // indirect
-	github.com/cyverse-de/go-mod/logging v0.0.2 // indirect
-	github.com/cyverse-de/go-mod/pbinit v0.0.1 // indirect
-	github.com/cyverse-de/go-mod/protobufjson v0.0.3 // indirect
 	github.com/cyverse-de/p/go/header v0.0.1 // indirect
-	github.com/cyverse-de/p/go/qms v0.0.1 // indirect
 	github.com/cyverse-de/p/go/svcerror v0.0.5 // indirect
 	github.com/joho/godotenv v1.3.0 // indirect
 	github.com/knadh/koanf v1.4.1 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/nats-io/nats.go v1.14.0 // indirect
 	github.com/nats-io/nkeys v0.3.0 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
