@@ -16,17 +16,21 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 
+	"github.com/cyverse-de/configurate"
+	"github.com/cyverse-de/go-mod/cfg"
+	"github.com/cyverse-de/go-mod/gotelnats"
 	"github.com/cyverse-de/go-mod/otelutils"
+	"github.com/cyverse-de/go-mod/protobufjson"
 	"github.com/cyverse-de/messaging/v9"
 	"github.com/cyverse-de/version"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/nats-io/nats.go"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-
-	"github.com/cyverse-de/configurate"
 
 	"github.com/cyverse-de/jex-adapter/adapter"
 	"github.com/cyverse-de/jex-adapter/db"
@@ -102,12 +106,47 @@ func amqpConnection(cfg *viper.Viper) (*messaging.Client, string) {
 	return amqpclient, exchangeName
 }
 
-func main() {
-	log := log.WithFields(logrus.Fields{"context": "main function"})
+func natsConnection(natsCluster, creds, tlsca, tlscrt, tlskey string, maxReconnects, reconnectWait int, envPrefix string) (*nats.EncodedConn, error) {
+	nc, err := nats.Connect(
+		natsCluster,
+		nats.UserCredentials(creds),
+		nats.RootCAs(tlsca),
+		nats.ClientCert(tlscrt, tlskey),
+		nats.RetryOnFailedConnect(true),
+		nats.MaxReconnects(maxReconnects),
+		nats.ReconnectWait(time.Duration(reconnectWait)*time.Second),
+		nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
+			log.Errorf("disconnected from nats: %s", err.Error())
+		}),
+		nats.ReconnectHandler(func(nc *nats.Conn) {
+			log.Infof("reconnected to %s", nc.ConnectedUrl())
+		}),
+		nats.ClosedHandler(func(nc *nats.Conn) {
+			log.Errorf("connection closed: %s", nc.LastError().Error())
+		}),
+	)
+	if err != nil {
+		return nil, err
+	}
 
+	return nats.NewEncodedConn(nc, "protojson")
+
+}
+
+func main() {
 	var (
+		err error
+
 		showVersion       = flag.Bool("version", false, "Print version information")
 		cfgPath           = flag.String("config", "", "Path to the configuration file")
+		dotEnvPath        = flag.String("dotenv-path", cfg.DefaultDotEnvPath, "Path to the dotenv file")
+		tlsCert           = flag.String("tlscert", gotelnats.DefaultTLSCertPath, "Path to the NATS TLS cert file")
+		tlsKey            = flag.String("tlskey", gotelnats.DefaultTLSKeyPath, "Path to the NATS TLS key file")
+		caCert            = flag.String("tlsca", gotelnats.DefaultTLSCAPath, "Path to the NATS TLS CA file")
+		credsPath         = flag.String("creds", gotelnats.DefaultCredsPath, "Path to the NATS creds file")
+		maxReconnects     = flag.Int("max-reconnects", gotelnats.DefaultMaxReconnects, "Maximum number of reconnection attempts to NATS")
+		reconnectWait     = flag.Int("reconnect-wait", gotelnats.DefaultReconnectWait, "Seconds to wait between reconnection attempts to NATS")
+		envPrefix         = flag.String("env-prefix", "QMS_", "The prefix for environment variables")
 		addr              = flag.String("addr", ":60000", "The port to listen on for HTTP requests")
 		defaultMillicores = flag.Float64("default-millicores", 4000.0, "The default number of millicores reserved for an analysis.")
 		logLevel          = flag.String("log-level", "info", "One of trace, debug, info, warn, error, fatal, or panic.")
@@ -116,10 +155,16 @@ func main() {
 	flag.Parse()
 	logging.SetupLogging(*logLevel)
 
+	log := log.WithFields(logrus.Fields{"context": "main function"})
+
 	var tracerCtx, cancel = context.WithCancel(context.Background())
 	defer cancel()
+
 	shutdown := otelutils.TracerProviderFromEnv(tracerCtx, serviceName, func(e error) { log.Fatal(e) })
 	defer shutdown()
+
+	nats.RegisterEncoder("protojson", protobufjson.NewCodec(protobufjson.WithEmitUnpopulated()))
+
 	log.Infof("log level is %s", *logLevel)
 	log.Infof("default millicores is %f", *defaultMillicores)
 
@@ -136,23 +181,43 @@ func main() {
 
 	log.Infof("config path is %s", *cfgPath)
 
-	cfg, err := configurate.InitDefaults(*cfgPath, configurate.JobServicesDefaults)
+	c, err := configurate.InitDefaults(*cfgPath, configurate.JobServicesDefaults)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	dbconn := dbConnection(cfg)
-	amqpclient, exchangeName := amqpConnection(cfg)
+	envCfg, err := cfg.Init(&cfg.Settings{
+		EnvPrefix:   *envPrefix,
+		ConfigPath:  *cfgPath,
+		DotEnvPath:  *dotEnvPath,
+		StrictMerge: false,
+		FileType:    cfg.YAML,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	natsCluster := envCfg.String("nats.cluster")
+	if natsCluster == "" {
+		log.Fatalf("The %s_NATS_CLUSTER environment variable or nats.cluster configuration value must be set", *envPrefix)
+	}
+
+	dbconn := dbConnection(c)
+	amqpclient, exchangeName := amqpConnection(c)
+	nc, err := natsConnection(natsCluster, *credsPath, *caCert, *tlsCert, *tlsKey, *maxReconnects, *reconnectWait, *envPrefix)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	dbase := db.New(dbconn)
 	detector, err := millicores.New(dbase, *defaultMillicores)
 	if err != nil {
 		log.Fatal(err)
 	}
-	messenger := adapter.NewAMQPMessenger(exchangeName, amqpclient)
+	messenger := adapter.NewAMQPMessenger(exchangeName, amqpclient, nc)
 
 	p := previewer.New()
-	a := adapter.New(cfg, detector, messenger)
+	a := adapter.New(c, detector, messenger)
 
 	go a.Run()
 	defer a.Finish()
