@@ -3,7 +3,7 @@ FROM golang:1.18
 COPY . /go/src/github.com/cyverse-de/jex-adapter
 WORKDIR /go/src/github.com/cyverse-de/jex-adapter
 ENV CGO_ENABLED=0
-RUN go install github.com/cyverse-de/jex-adapter
+RUN go build --buildvcs=false .
 
 ENTRYPOINT ["jex-adapter"]
 CMD ["--help"]
