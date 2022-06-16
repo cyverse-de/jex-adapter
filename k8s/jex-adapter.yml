@@ -13,6 +13,7 @@ spec:
         de-app: jex-adapter
         app: de
     spec:
+      serviceAccount: configurator
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

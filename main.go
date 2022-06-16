@@ -146,7 +146,7 @@ func main() {
 		credsPath         = flag.String("creds", gotelnats.DefaultCredsPath, "Path to the NATS creds file")
 		maxReconnects     = flag.Int("max-reconnects", gotelnats.DefaultMaxReconnects, "Maximum number of reconnection attempts to NATS")
 		reconnectWait     = flag.Int("reconnect-wait", gotelnats.DefaultReconnectWait, "Seconds to wait between reconnection attempts to NATS")
-		envPrefix         = flag.String("env-prefix", "QMS_", "The prefix for environment variables")
+		envPrefix         = flag.String("env-prefix", cfg.DefaultEnvPrefix, "The prefix for environment variables")
 		addr              = flag.String("addr", ":60000", "The port to listen on for HTTP requests")
 		defaultMillicores = flag.Float64("default-millicores", 4000.0, "The default number of millicores reserved for an analysis.")
 		logLevel          = flag.String("log-level", "info", "One of trace, debug, info, warn, error, fatal, or panic.")
