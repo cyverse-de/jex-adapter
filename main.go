@@ -202,6 +202,8 @@ func main() {
 		log.Fatalf("The %s_NATS_CLUSTER environment variable or nats.cluster configuration value must be set", *envPrefix)
 	}
 
+	log.Infof("nats.cluster is set to '%s'", natsCluster)
+
 	dbconn := dbConnection(c)
 	amqpclient, exchangeName := amqpConnection(c)
 	nc, err := natsConnection(natsCluster, *credsPath, *caCert, *tlsCert, *tlsKey, *maxReconnects, *reconnectWait, *envPrefix)
