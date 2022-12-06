@@ -2,7 +2,7 @@ package previewer
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/cyverse-de/jex-adapter/logging"
@@ -28,7 +28,7 @@ func (p *Previewer) Routes(router types.Router) {
 func (p *Previewer) PreviewHandler(c echo.Context) error {
 	body := c.Request().Body
 
-	bodyBytes, err := ioutil.ReadAll(body)
+	bodyBytes, err := io.ReadAll(body)
 	if err != nil {
 		log.Error(err)
 		return err
