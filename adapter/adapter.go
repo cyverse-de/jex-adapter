@@ -133,10 +133,12 @@ func (a *AMQPMessenger) Launch(context context.Context, job *model.Job) error {
 	)
 	if err != nil {
 		amqpError(err)
-		s.Close()
+		_ = s.Close()
 		return err
 	}
-	defer s.Close()
+	defer func() {
+		_ = s.Close()
+	}()
 
 	if launchJSON, err = json.Marshal(messaging.NewLaunchRequest(job)); err != nil {
 		return err
@@ -181,6 +183,7 @@ func New(cfg *viper.Viper, detector *millicores.Detector, messenger Messenger) *
 }
 
 func (j *JEXAdapter) Run() {
+RunLoop:
 	for {
 		select {
 		case mj := <-j.addJob:
@@ -204,7 +207,7 @@ func (j *JEXAdapter) Run() {
 			delete(j.jobs, doneJobID.String())
 
 		case <-j.exit:
-			break
+			break RunLoop
 		}
 	}
 }

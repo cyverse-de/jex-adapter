@@ -5,7 +5,6 @@
 // with. Instead of writing the files out to disk and calling condor_submit like
 // the JEX service did, it serializes the request as JSON and pushes it out
 // as a message on the "jobs" exchange with a routing key of "jobs.launches".
-//
 package main
 
 import (
@@ -116,7 +115,11 @@ func natsConnection(natsCluster, creds, tlsca, tlscrt, tlskey string, maxReconne
 		nats.MaxReconnects(maxReconnects),
 		nats.ReconnectWait(time.Duration(reconnectWait)*time.Second),
 		nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
-			log.Errorf("disconnected from nats: %s", err.Error())
+			if err != nil {
+				log.Errorf("disconnected from nats: %s", err.Error())
+			} else {
+				log.Errorf("disconnected from nats with no error - check nats authentication settings")
+			}
 		}),
 		nats.ReconnectHandler(func(nc *nats.Conn) {
 			log.Infof("reconnected to %s", nc.ConnectedUrl())
@@ -229,7 +232,9 @@ func main() {
 	router.HTTPErrorHandler = logging.HTTPErrorHandler
 
 	routerLogger := log.Writer()
-	defer routerLogger.Close()
+	defer func() {
+		_ = routerLogger.Close()
+	}()
 
 	router.Use(middleware.LoggerWithConfig(
 		middleware.LoggerConfig{
