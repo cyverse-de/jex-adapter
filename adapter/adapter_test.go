@@ -54,7 +54,7 @@ func initTestAdapter(t *testing.T) (*JEXAdapter, sqlmock.Sqlmock) {
 		dbase := db.New(dbconn)
 		detector, err := millicores.New(dbase, 4000.0)
 		if err != nil {
-			t.Fatalf(err.Error())
+			t.Fatalf("unexpected error: %s", err.Error())
 		}
 		a = New(cfg, detector, msger)
 	}
