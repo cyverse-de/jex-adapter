@@ -104,6 +104,7 @@ func amqpConnection(cfg *viper.Viper) (*messaging.Client, string) {
 	return amqpclient, exchangeName
 }
 
+//nolint:staticcheck // EncodedConn retirement is a planned follow-up to the protobuf removal
 func natsConnection(natsCluster, creds, tlsca, tlscrt, tlskey string, maxReconnects, reconnectWait int, envPrefix string) (*nats.EncodedConn, error) {
 	nc, err := nats.Connect(
 		natsCluster,
@@ -131,6 +132,7 @@ func natsConnection(natsCluster, creds, tlsca, tlscrt, tlskey string, maxReconne
 		return nil, err
 	}
 
+	//nolint:staticcheck // EncodedConn retirement is a planned follow-up to the protobuf removal
 	return nats.NewEncodedConn(nc, nats.JSON_ENCODER)
 
 }
@@ -233,6 +235,7 @@ func main() {
 		_ = routerLogger.Close()
 	}()
 
+	//nolint:staticcheck // migrating to RequestLoggerWithConfig changes the log format; deferred
 	router.Use(middleware.LoggerWithConfig(
 		middleware.LoggerConfig{
 			Format: "${method} ${uri} ${status}",
