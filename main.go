@@ -21,7 +21,6 @@ import (
 	"github.com/cyverse-de/go-mod/cfg"
 	"github.com/cyverse-de/go-mod/gotelnats"
 	"github.com/cyverse-de/go-mod/otelutils"
-	"github.com/cyverse-de/go-mod/protobufjson"
 	"github.com/cyverse-de/messaging/v9"
 	"github.com/cyverse-de/version"
 	"github.com/jmoiron/sqlx"
@@ -132,7 +131,7 @@ func natsConnection(natsCluster, creds, tlsca, tlscrt, tlskey string, maxReconne
 		return nil, err
 	}
 
-	return nats.NewEncodedConn(nc, "protojson")
+	return nats.NewEncodedConn(nc, nats.JSON_ENCODER)
 
 }
 
@@ -166,7 +165,6 @@ func main() {
 	shutdown := otelutils.TracerProviderFromEnv(tracerCtx, serviceName, func(e error) { log.Fatal(e) })
 	defer shutdown()
 
-	nats.RegisterEncoder("protojson", protobufjson.NewCodec(protobufjson.WithEmitUnpopulated()))
 
 	log.Infof("log level is %s", *logLevel)
 	log.Infof("default millicores is %f", *defaultMillicores)
