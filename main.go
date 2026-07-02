@@ -165,7 +165,6 @@ func main() {
 	shutdown := otelutils.TracerProviderFromEnv(tracerCtx, serviceName, func(e error) { log.Fatal(e) })
 	defer shutdown()
 
-
 	log.Infof("log level is %s", *logLevel)
 	log.Infof("default millicores is %f", *defaultMillicores)
 
