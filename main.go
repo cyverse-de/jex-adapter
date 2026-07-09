@@ -21,7 +21,6 @@ import (
 	"github.com/cyverse-de/go-mod/cfg"
 	"github.com/cyverse-de/go-mod/gotelnats"
 	"github.com/cyverse-de/go-mod/otelutils"
-	"github.com/cyverse-de/go-mod/protobufjson"
 	"github.com/cyverse-de/messaging/v9"
 	"github.com/cyverse-de/version"
 	"github.com/jmoiron/sqlx"
@@ -105,6 +104,7 @@ func amqpConnection(cfg *viper.Viper) (*messaging.Client, string) {
 	return amqpclient, exchangeName
 }
 
+//nolint:staticcheck // EncodedConn retirement is a planned follow-up to the protobuf removal
 func natsConnection(natsCluster, creds, tlsca, tlscrt, tlskey string, maxReconnects, reconnectWait int, envPrefix string) (*nats.EncodedConn, error) {
 	nc, err := nats.Connect(
 		natsCluster,
@@ -132,7 +132,8 @@ func natsConnection(natsCluster, creds, tlsca, tlscrt, tlskey string, maxReconne
 		return nil, err
 	}
 
-	return nats.NewEncodedConn(nc, "protojson")
+	//nolint:staticcheck // EncodedConn retirement is a planned follow-up to the protobuf removal
+	return nats.NewEncodedConn(nc, nats.JSON_ENCODER)
 
 }
 
@@ -165,8 +166,6 @@ func main() {
 
 	shutdown := otelutils.TracerProviderFromEnv(tracerCtx, serviceName, func(e error) { log.Fatal(e) })
 	defer shutdown()
-
-	nats.RegisterEncoder("protojson", protobufjson.NewCodec(protobufjson.WithEmitUnpopulated()))
 
 	log.Infof("log level is %s", *logLevel)
 	log.Infof("default millicores is %f", *defaultMillicores)
@@ -236,6 +235,7 @@ func main() {
 		_ = routerLogger.Close()
 	}()
 
+	//nolint:staticcheck // migrating to RequestLoggerWithConfig changes the log format; deferred
 	router.Use(middleware.LoggerWithConfig(
 		middleware.LoggerConfig{
 			Format: "${method} ${uri} ${status}",

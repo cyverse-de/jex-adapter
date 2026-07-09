@@ -45,9 +45,11 @@ func amqpError(err error) {
 type AMQPMessenger struct {
 	exchange string
 	client   *messaging.Client
+	//nolint:staticcheck // EncodedConn retirement is a planned follow-up to the protobuf removal
 	natsConn *nats.EncodedConn
 }
 
+//nolint:staticcheck // EncodedConn retirement is a planned follow-up to the protobuf removal
 func NewAMQPMessenger(exchange string, client *messaging.Client, natsConn *nats.EncodedConn) *AMQPMessenger {
 	return &AMQPMessenger{
 		exchange: exchange,
