@@ -1,4 +1,4 @@
-FROM golang:1.21
+FROM golang:1.25
 
 COPY . /go/src/github.com/cyverse-de/jex-adapter
 WORKDIR /go/src/github.com/cyverse-de/jex-adapter
